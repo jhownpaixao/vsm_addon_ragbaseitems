@@ -30,8 +30,69 @@ modded class rag_baseitems_container_base
         return true;
     }
 
+    override bool CanReceiveItemIntoCargo(EntityAI item)
+    {
+        if (VSM_CanManipule())
+            return super.CanReceiveItemIntoCargo(item);
+
+        return false;
+    }
+
+    override bool CanReleaseCargo(EntityAI cargo)
+    {
+        if (VSM_CanManipule())
+            return super.CanReleaseCargo(cargo);
+
+        return false;
+    }
+
+    override bool CanReceiveAttachment(EntityAI attachment, int slotId)
+    {
+        //!desativar por enquanto, está impedindo a criação de attachments mesmo vindo do módulo de virtualização
+        //TODO: formular um método de criação dos attachments apartir do módulo, ao mesmo tempo que não permite o player mexer...
+        if (VSM_IsOpen() /* && !VSM_IsProcessing() */) 
+            return super.CanReceiveAttachment(attachment, slotId);
+
+        return false;
+    }
+
+    override bool CanReleaseAttachment(EntityAI attachment)
+    {
+        if (VSM_CanManipule())
+            return super.CanReleaseAttachment(attachment);
+
+        return false;
+    }
+
+    override bool CanDisplayAttachmentSlot(int slot_id)
+    {
+        if (VSM_CanManipule())
+            return super.CanDisplayAttachmentSlot(slot_id);
+
+        return false;
+    }
+
+    override bool CanDisplayCargo()
+    {
+        if (VSM_CanManipule())
+            return super.CanDisplayCargo();
+
+        return false;
+    }
+
+     bool CanDisplayAttachmentCategory( string category_name )
+	{
+		if (VSM_IsOpen())
+            return super.CanDisplayAttachmentCategory(category_name);
+
+        return false;
+	}
+
     override void Open()
     {
+        if(VSM_IsProcessing())
+            return;
+
         super.Open();
         if (GetGame().IsServer())
         {
@@ -42,14 +103,15 @@ modded class rag_baseitems_container_base
 
     override void Close()
     {
-        
+        if(VSM_IsProcessing())
+            return;
+
         if (GetGame().IsServer())
         {
             VirtualStorageModule.GetModule().OnSaveVirtualStore(this);
             VSM_StopAutoClose();
         }
         
-        // Print("CLOSE CHAMADO PARA " + GetType());
         super.Close();
     }
 
@@ -96,6 +158,13 @@ modded class rag_baseitems_container_base
         if (GetGame().IsServer())
             VirtualStorageModule.GetModule().OnDeleteContainer(this);
     }
+
+    override void OnDamageDestroyed(int oldLevel)
+	{
+		super.OnDamageDestroyed(oldLevel);
+		if (GetGame().IsServer())
+            VirtualStorageModule.GetModule().OnDestroyed(this);
+	};
 
     override void OnStoreSave(ParamsWriteContext ctx)
     {
