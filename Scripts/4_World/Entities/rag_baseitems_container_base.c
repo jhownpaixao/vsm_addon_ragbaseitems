@@ -14,7 +14,7 @@ modded class rag_baseitems_container_base
             return false;
 
         if(VSM_CanVirtualize())
-            return !m_VSM_HasVirtualItems;
+            return !VSM_HasVirtualItems();
 
         return true;
     }
@@ -25,7 +25,7 @@ modded class rag_baseitems_container_base
             return false;
 
         if(VSM_CanVirtualize())
-            return !m_VSM_HasVirtualItems;
+            return !VSM_HasVirtualItems();
         
         return true;
     }
@@ -80,7 +80,7 @@ modded class rag_baseitems_container_base
         return false;
     }
 
-     bool CanDisplayAttachmentCategory( string category_name )
+    bool CanDisplayAttachmentCategory( string category_name )
 	{
 		if (VSM_IsOpen())
             return super.CanDisplayAttachmentCategory(category_name);
@@ -90,27 +90,25 @@ modded class rag_baseitems_container_base
 
     override void Open()
     {
+        Print("Open: isprocessing=" + VSM_IsProcessing() + " m_IsOpened="+m_IsOpened);
         if(VSM_IsProcessing())
             return;
 
         super.Open();
-        if (GetGame().IsServer())
-        {
+
+        if (GetGame().IsServer() && VSM_IsOpen())
             VirtualStorageModule.GetModule().OnLoadVirtualStore(this);
-            VSM_StartAutoClose();
-        }
+
+        Print("Open FINISH: isprocessing=" + VSM_IsProcessing() + " m_IsOpened="+m_IsOpened); 
     }
 
     override void Close()
     {
-        if(VSM_IsProcessing())
+        if(VSM_IsProcessing() && !VSM_IsOpen())
             return;
 
         if (GetGame().IsServer())
-        {
             VirtualStorageModule.GetModule().OnSaveVirtualStore(this);
-            VSM_StopAutoClose();
-        }
         
         super.Close();
     }
@@ -123,22 +121,22 @@ modded class rag_baseitems_container_base
 
     override void VSM_Open()
     {
+        return;
+
         super.VSM_Open();
 
-        if (VSM_CanVirtualize() && !VSM_IsOpen())
-        {
+        if (!VSM_IsOpen())
             Open();
-        }
+        
     }
 
     override void VSM_Close()
     {
+        return;
         super.VSM_Close();
     
-        if (VSM_CanVirtualize() && VSM_IsOpen())
-        {
+        if (VSM_IsOpen())
             Close();
-        }
     }
 
     override void EEInit()
@@ -146,9 +144,8 @@ modded class rag_baseitems_container_base
         super.EEInit();
 
 		if (GetGame().IsServer())
-        {
             VirtualStorageModule.GetModule().OnInitContainer(this);
-        }
+        
 	}
 
     override void EEDelete(EntityAI parent)
@@ -162,6 +159,7 @@ modded class rag_baseitems_container_base
     override void OnDamageDestroyed(int oldLevel)
 	{
 		super.OnDamageDestroyed(oldLevel);
+
 		if (GetGame().IsServer())
             VirtualStorageModule.GetModule().OnDestroyed(this);
 	};
