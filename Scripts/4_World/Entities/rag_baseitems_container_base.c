@@ -89,28 +89,25 @@ modded class rag_baseitems_container_base
 	}
 
     override void Open()
-    {
-        Print("Open: isprocessing=" + VSM_IsProcessing() + " m_IsOpened="+m_IsOpened);
-        if(VSM_IsProcessing())
-            return;
+    {   
+        if (VSM_CanOpen())
+        {
+            super.Open();
 
-        super.Open();
-
-        if (GetGame().IsServer() && VSM_IsOpen())
-            VirtualStorageModule.GetModule().OnLoadVirtualStore(this);
-
-        Print("Open FINISH: isprocessing=" + VSM_IsProcessing() + " m_IsOpened="+m_IsOpened); 
+            if (GetGame().IsServer())
+                VirtualStorageModule.GetModule().OnLoadVirtualStore(this);
+        }
     }
 
     override void Close()
     {
-        if(VSM_IsProcessing() && !VSM_IsOpen())
-            return;
-
-        if (GetGame().IsServer())
+        if (VSM_CanClose())
+        {
+            if (GetGame().IsServer())
             VirtualStorageModule.GetModule().OnSaveVirtualStore(this);
-        
-        super.Close();
+            
+            super.Close();
+        }
     }
 
     //! virtualização
@@ -121,22 +118,21 @@ modded class rag_baseitems_container_base
 
     override void VSM_Open()
     {
-        return;
-
         super.VSM_Open();
-
         if (!VSM_IsOpen())
+        {
             Open();
-        
+        }
     }
 
     override void VSM_Close()
     {
-        return;
         super.VSM_Close();
-    
+
         if (VSM_IsOpen())
-            Close();
+        {
+           	Close();
+        };
     }
 
     override void EEInit()

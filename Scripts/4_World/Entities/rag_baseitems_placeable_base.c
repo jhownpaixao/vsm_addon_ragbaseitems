@@ -83,25 +83,24 @@ modded class rag_baseitems_placeable_base : ItemBase
 
     override void Open()
     {
-        if(VSM_IsProcessing())
-            return;
-            
-        super.Open();
-        if (GetGame().IsServer() && VSM_IsOpen())
-            VirtualStorageModule.GetModule().OnLoadVirtualStore(this);   
+        if (VSM_CanOpen())
+        {
+            super.Open();
+
+            if (GetGame().IsServer())
+                VirtualStorageModule.GetModule().OnLoadVirtualStore(this);
+        }  
     }
 
     override void Close()
     {
-        if(VSM_IsProcessing() && !VSM_IsOpen())
-            return;
-
-        if (GetGame().IsServer())
+        if (VSM_CanClose())
         {
+            if (GetGame().IsServer())
             VirtualStorageModule.GetModule().OnSaveVirtualStore(this);
-            VSM_StopAutoClose();
+            
+            super.Close();
         }
-        super.Close();
     }
 
 
