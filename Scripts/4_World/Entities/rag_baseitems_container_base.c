@@ -80,7 +80,7 @@ modded class rag_baseitems_container_base
         return false;
     }
 
-    bool CanDisplayAttachmentCategory( string category_name )
+    override bool CanDisplayAttachmentCategory( string category_name )
 	{
 		if (VSM_IsOpen())
             return super.CanDisplayAttachmentCategory(category_name);
@@ -163,7 +163,9 @@ modded class rag_baseitems_container_base
     override void OnStoreSave(ParamsWriteContext ctx)
     {
         super.OnStoreSave(ctx);
-        ctx.Write(m_VSM_HasVirtualItems);
+
+        if(!VirtualStorageModule.GetModule().IsNew())
+            ctx.Write(m_VSM_HasVirtualItems);
     }
 
     override bool OnStoreLoad(ParamsReadContext ctx, int version)
@@ -171,7 +173,8 @@ modded class rag_baseitems_container_base
         if (!super.OnStoreLoad(ctx, version))
             return false;
 
-        ctx.Read(m_VSM_HasVirtualItems)
+        if(!VirtualStorageModule.GetModule().IsRemoving())
+            ctx.Read(m_VSM_HasVirtualItems);
 
         return true;
     }
@@ -184,7 +187,7 @@ modded class rag_baseitems_container_base
 
     override void VSM_OnBeforeRestoreChildren() //as item
     {
-        SetStateOpen()
+        SetStateOpen();
     }
 
     override void VSM_OnAfterRestoreChildren() // as item
@@ -194,7 +197,7 @@ modded class rag_baseitems_container_base
 
     override void VSM_OnBeforeContainerRestore() // as storage
     {
-        SetStateOpen()
+        SetStateOpen();
     }
 
     override void VSM_OnAfterContainerRestore() // as storage

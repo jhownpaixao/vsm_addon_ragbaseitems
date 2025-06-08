@@ -1,6 +1,7 @@
 modded class rag_baseitems_placeable_base : ItemBase
 {
     protected bool m_LastOpen;
+
     void rag_baseitems_placeable_base()
     {
         VSM_StartAutoClose();
@@ -10,7 +11,7 @@ modded class rag_baseitems_placeable_base : ItemBase
     override bool CanPutInCargo(EntityAI parent)
     {
         if(!VSM_CanVirtualize() || !VSM_HasVirtualItems())
-            return super.CanPutInCargo(parent)
+            return super.CanPutInCargo(parent);
 
         return false;
     }
@@ -18,7 +19,7 @@ modded class rag_baseitems_placeable_base : ItemBase
     override bool CanPutIntoHands(EntityAI parent)
     {
         if(!VSM_CanVirtualize() || !VSM_HasVirtualItems())
-            return super.CanPutIntoHands(parent)
+            return super.CanPutIntoHands(parent);
 
         return false;
     }
@@ -73,7 +74,7 @@ modded class rag_baseitems_placeable_base : ItemBase
         return false;
     }
 
-     bool CanDisplayAttachmentCategory( string category_name )
+    override bool CanDisplayAttachmentCategory( string category_name )
 	{
 		if (VSM_IsOpen())
             return super.CanDisplayAttachmentCategory(category_name);
@@ -89,7 +90,7 @@ modded class rag_baseitems_placeable_base : ItemBase
 
             if (GetGame().IsServer())
                 VirtualStorageModule.GetModule().OnLoadVirtualStore(this);
-        }  
+        }
     }
 
     override void Close()
@@ -159,7 +160,9 @@ modded class rag_baseitems_placeable_base : ItemBase
     override void OnStoreSave(ParamsWriteContext ctx)
     {
         super.OnStoreSave(ctx);
-        ctx.Write(m_VSM_HasVirtualItems);
+        
+        if(!VirtualStorageModule.GetModule().IsRemoving())
+            ctx.Write(m_VSM_HasVirtualItems);
     }
 
     override bool OnStoreLoad(ParamsReadContext ctx, int version)
@@ -167,7 +170,8 @@ modded class rag_baseitems_placeable_base : ItemBase
         if (!super.OnStoreLoad(ctx, version))
             return false;
 
-        ctx.Read(m_VSM_HasVirtualItems)
+         if(!VirtualStorageModule.GetModule().IsNew())
+            ctx.Read(m_VSM_HasVirtualItems);
 
         return true;
     }
@@ -180,7 +184,7 @@ modded class rag_baseitems_placeable_base : ItemBase
 
     override void VSM_OnBeforeRestoreChildren() //as item
     {
-        SetStateOpen()
+        SetStateOpen();
     }
 
     override void VSM_OnAfterRestoreChildren() // as item
@@ -190,7 +194,7 @@ modded class rag_baseitems_placeable_base : ItemBase
 
     override void VSM_OnBeforeContainerRestore() // as storage
     {
-        SetStateOpen()
+        SetStateOpen();
     }
 
     override void VSM_OnAfterContainerRestore() // as storage
