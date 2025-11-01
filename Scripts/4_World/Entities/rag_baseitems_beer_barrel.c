@@ -4,9 +4,4 @@ modded class rag_baseitems_beer_barrel
     {
         return false;
     }
-
-    override bool VSM_IsOpen()
-    {
-        return true;
-    }
 }

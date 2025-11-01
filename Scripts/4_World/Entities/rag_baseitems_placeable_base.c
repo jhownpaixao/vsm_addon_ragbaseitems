@@ -2,25 +2,30 @@ modded class rag_baseitems_placeable_base : ItemBase
 {
     protected bool m_LastOpen;
 
-    void rag_baseitems_placeable_base()
-    {
-        VSM_StartAutoClose();
-    }
-
-    //! mesclar caracteristicas do storage para virtual
+    //Behaviour overrides----------------------------------------
     override bool CanPutInCargo(EntityAI parent)
     {
-        if(!VSM_CanVirtualize() || !VSM_HasVirtualItems())
-            return super.CanPutInCargo(parent);
+        if(super.CanPutInCargo(parent))
+        {
+            if(!IsShelfCrate() && VSM_CanVirtualize() && VSM_HasVirtualItems())
+                return false;
 
+            return true;
+        }
+        
         return false;
     }
 
     override bool CanPutIntoHands(EntityAI parent)
     {
-        if(!VSM_CanVirtualize() || !VSM_HasVirtualItems())
-            return super.CanPutIntoHands(parent);
+        if(super.CanPutIntoHands(parent))
+        {
+            if(!IsShelfCrate() && VSM_CanVirtualize() && VSM_HasVirtualItems())
+                return false;
 
+            return true;
+        }
+        
         return false;
     }
 
@@ -42,9 +47,7 @@ modded class rag_baseitems_placeable_base : ItemBase
 
     override bool CanReceiveAttachment(EntityAI attachment, int slotId)
     {
-        //!desativar por enquanto, está impedindo a criação de attachments mesmo vindo do módulo de virtualização
-        //TODO: formular um método de criação dos attachments apartir do módulo, ao mesmo tempo que não permite o player mexer...
-        if (VSM_IsOpen() /* && !VSM_IsProcessing() */) 
+        if (VSM_CanManipule()) 
             return super.CanReceiveAttachment(attachment, slotId);
 
         return false;
@@ -83,13 +86,15 @@ modded class rag_baseitems_placeable_base : ItemBase
 	}
 
     override void Open()
-    {
+    {   
         if (VSM_CanOpen())
         {
             super.Open();
 
             if (GetGame().IsServer())
+            {
                 VirtualStorageModule.GetModule().OnLoadVirtualStore(this);
+            }
         }
     }
 
@@ -98,14 +103,16 @@ modded class rag_baseitems_placeable_base : ItemBase
         if (VSM_CanClose())
         {
             if (GetGame().IsServer())
-            VirtualStorageModule.GetModule().OnSaveVirtualStore(this);
+            {
+                VirtualStorageModule.GetModule().OnSaveVirtualStore(this);
+            }
             
             super.Close();
         }
     }
 
 
-    //! virtualização
+    //VSM adjustments----------------------------------------
     override bool VSM_IsOpen()
     {
         return IsOpen();
@@ -115,7 +122,7 @@ modded class rag_baseitems_placeable_base : ItemBase
     {
         super.VSM_Open();
 
-        if (VSM_CanVirtualize() && !VSM_IsOpen())
+        if (VSM_CanOpen())
         {
             Open();
         }
@@ -125,12 +132,21 @@ modded class rag_baseitems_placeable_base : ItemBase
     {
         super.VSM_Close();
     
-        if (VSM_CanVirtualize() && VSM_IsOpen())
+        if (VSM_CanClose())
         {
             Close();
         }
     }
 
+    override bool VSM_IsVirtualizable()
+    {
+        if(super.VSM_IsVirtualizable())
+            return !GetInventory().IsAttachment();
+        
+        return false;
+    }
+
+    //VSM Wrapper events ----------------------------------------
     override void EEInit()
 	{
         super.EEInit();
@@ -160,18 +176,20 @@ modded class rag_baseitems_placeable_base : ItemBase
     override void OnStoreSave(ParamsWriteContext ctx)
     {
         super.OnStoreSave(ctx);
-        
-        if(!VirtualStorageModule.GetModule().IsRemoving())
-            ctx.Write(m_VSM_HasVirtualItems);
+        if(VirtualStorageModule.GetModule().IsRemoving()) return;
+
+        ctx.Write(m_VSM_HasVirtualItems);
     }
 
     override bool OnStoreLoad(ParamsReadContext ctx, int version)
     {
-        if (!super.OnStoreLoad(ctx, version))
-            return false;
+        if (!super.OnStoreLoad(ctx, version)) return false;
 
-         if(!VirtualStorageModule.GetModule().IsNew())
-            ctx.Read(m_VSM_HasVirtualItems);
+        //TODO este seria o certo, mas os servers em produção ainda não tem este recurso e vão falhar
+        //TODO primeiro lançar uma att com ele, e na proxima desativa-lo
+		// if(VSM_Addon_RaGBaseItems.GetAddon().IsNew()) return true; 
+
+        if (!ctx.Read(m_VSM_HasVirtualItems)) return false;
 
         return true;
     }
@@ -181,37 +199,4 @@ modded class rag_baseitems_placeable_base : ItemBase
         super.AfterStoreLoad(); // se for por primeiro abre/fecha o container e atrapalha o fluxo
         VSM_SetHasItems(m_VSM_HasVirtualItems);
     }
-
-    override void VSM_OnBeforeRestoreChildren() //as item
-    {
-        SetStateOpen();
-    }
-
-    override void VSM_OnAfterRestoreChildren() // as item
-    {
-        RestoreStateOpen();
-    }
-
-    override void VSM_OnBeforeContainerRestore() // as storage
-    {
-        SetStateOpen();
-    }
-
-    override void VSM_OnAfterContainerRestore() // as storage
-    {
-        super.VSM_OnAfterContainerRestore(); //autoclose ?
-        RestoreStateOpen();
-    }
-
-    void SetStateOpen()
-    {
-        m_LastOpen = m_IsOpened;
-        m_IsOpened = true;
-    }
-
-    void RestoreStateOpen() // as item
-    {
-        m_IsOpened = m_LastOpen;
-    }
-
 }

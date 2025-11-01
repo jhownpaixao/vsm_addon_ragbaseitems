@@ -4,8 +4,4 @@ modded class rag_baseitems_smoker
     {
         return false;
     }
-    override bool VSM_IsOpen()
-    {
-        return true;
-    }
 }

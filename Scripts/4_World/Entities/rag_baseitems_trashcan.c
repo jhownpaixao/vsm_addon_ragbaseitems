@@ -4,9 +4,4 @@ modded class rag_baseitems_trashcan
     {
         return false;
     }
-
-    override bool VSM_IsOpen()
-    {
-        return true;
-    }
 }

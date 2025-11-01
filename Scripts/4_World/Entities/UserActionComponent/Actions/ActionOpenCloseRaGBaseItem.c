@@ -7,7 +7,7 @@ modded class ActionOpenCloseRaGBaseItem
 		{
 			if (building.IsOpen())
 			{
-				if (!building.VSM_CanClose())
+				if (building.VSM_IsVirtualStorage() && !building.VSM_CanClose())
 				{
 					VirtualUtils.SendMessageToPlayer(action_data.m_Player, "STR_VSM_NOT_CLOSE_CONTAINER");
 					return;
@@ -16,7 +16,7 @@ modded class ActionOpenCloseRaGBaseItem
 			}
 			else
 			{
-				if (!building.VSM_CanOpen())
+				if (building.VSM_IsVirtualStorage() && !building.VSM_CanOpen())
 				{
 					VirtualUtils.SendMessageToPlayer(action_data.m_Player, "STR_VSM_NOT_OPEN_CONTAINER");
 					return;

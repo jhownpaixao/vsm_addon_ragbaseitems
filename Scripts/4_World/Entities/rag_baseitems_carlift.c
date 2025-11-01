@@ -4,9 +4,4 @@ modded class rag_baseitems_carlift
     {
         return false;
     }
-
-    override bool VSM_IsOpen()
-    {
-        return true;
-    }
 }

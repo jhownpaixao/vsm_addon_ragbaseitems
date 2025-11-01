@@ -4,8 +4,4 @@ modded class rag_baseitems_solarpanel
     {
         return false;
     }
-    override bool VSM_IsOpen()
-    {
-        return true;
-    }
 }

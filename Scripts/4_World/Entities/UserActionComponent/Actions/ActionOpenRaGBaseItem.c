@@ -5,7 +5,7 @@ modded class ActionOpenRaGBaseItem
 		ItemBase building = ItemBase.Cast(action_data.m_Target.GetObject());
 		if ( building )
 		{	
-			if (!building.VSM_CanOpen())
+			if (building.VSM_IsVirtualStorage() && !building.VSM_CanOpen())
 			{
 				VirtualUtils.SendMessageToPlayer(action_data.m_Player, "STR_VSM_NOT_OPEN_CONTAINER");
 				return;
