@@ -7,29 +7,6 @@ modded class rag_baseitems_container_base
         VSM_StartAutoClose();
     }
 
-    //! mesclar caracteristicas do storage para virtual
-    override bool CanPutInCargo(EntityAI parent)
-    {
-        if (!super.CanPutInCargo(parent))
-            return false;
-
-        if(VSM_CanVirtualize())
-            return !VSM_HasVirtualItems();
-
-        return true;
-    }
-
-    override bool CanPutIntoHands(EntityAI parent)
-    {
-        if (!super.CanPutIntoHands(parent))
-            return false;
-
-        if(VSM_CanVirtualize())
-            return !VSM_HasVirtualItems();
-        
-        return true;
-    }
-
     override bool CanReceiveItemIntoCargo(EntityAI item)
     {
         if (VSM_CanManipule())
@@ -95,7 +72,10 @@ modded class rag_baseitems_container_base
             super.Open();
 
             if (GetGame().IsServer())
+            {
+                VSM_StartAutoClose();
                 VirtualStorageModule.GetModule().OnLoadVirtualStore(this);
+            }
         }
     }
 
@@ -104,7 +84,10 @@ modded class rag_baseitems_container_base
         if (VSM_CanClose())
         {
             if (GetGame().IsServer())
-            VirtualStorageModule.GetModule().OnSaveVirtualStore(this);
+            {
+                VSM_StopAutoClose();
+                VirtualStorageModule.GetModule().OnSaveVirtualStore(this);
+            }
             
             super.Close();
         }
@@ -182,39 +165,42 @@ modded class rag_baseitems_container_base
     override void AfterStoreLoad()
     {
         super.AfterStoreLoad(); // se for por primeiro abre/fecha o container e atrapalha o fluxo
+        
         VSM_SetHasItems(m_VSM_HasVirtualItems);
     }
 
-    override void VSM_OnBeforeRestoreChildren() //as item
+    //! compatibilidade---------------------------------------------------
+    override void VSM_OnBeforeRestoreChildren() 
     {
-        SetStateOpen();
-    }
+        super.VSM_OnBeforeRestoreChildren();
 
-    override void VSM_OnAfterRestoreChildren() // as item
-    {
-        RestoreStateOpen();
-    }
-
-    override void VSM_OnBeforeContainerRestore() // as storage
-    {
-        SetStateOpen();
-    }
-
-    override void VSM_OnAfterContainerRestore() // as storage
-    {
-        super.VSM_OnAfterContainerRestore(); //autoclose
-        RestoreStateOpen();
-    }
-
-    void SetStateOpen()
-    {
+        //! abrir para restauarar os filhos (senão bloqueia)
         m_LastOpen = m_IsOpened;
         m_IsOpened = true;
     }
 
-    void RestoreStateOpen() // as item
-    {
+    override void VSM_OnAfterRestoreChildren() 
+    {   
+        super.VSM_OnAfterRestoreChildren();
+
+        //! restaurar o estado anterior
         m_IsOpened = m_LastOpen;
     }
 
+    override void VSM_OnBeforeVirtualize()
+    {
+        super.VSM_OnBeforeVirtualize();
+        
+        if (!VSM_IsOpen() && VSM_HasVirtualItems()) 
+            VSM_Open();
+    }
+    //! ---------------------------------------------------
+
+    override bool VSM_IsVirtualizable()
+    {
+        if(super.VSM_IsVirtualizable())
+            return !GetInventory().IsAttachment();
+        
+        return false;
+    }
 }

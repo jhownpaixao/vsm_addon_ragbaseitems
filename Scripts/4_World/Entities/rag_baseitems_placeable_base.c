@@ -1,4 +1,4 @@
-modded class rag_baseitems_placeable_base : ItemBase
+modded class rag_baseitems_placeable_base
 {
     protected bool m_LastOpen;
 
@@ -10,17 +10,26 @@ modded class rag_baseitems_placeable_base : ItemBase
     //! mesclar caracteristicas do storage para virtual
     override bool CanPutInCargo(EntityAI parent)
     {
-        if(!VSM_CanVirtualize() || !VSM_HasVirtualItems())
-            return super.CanPutInCargo(parent);
-
+        if(super.CanPutInCargo(parent))
+        {
+            return VSM_CanVirtualize() && !VSM_HasVirtualItems();
+        }
+        
         return false;
     }
 
     override bool CanPutIntoHands(EntityAI parent)
     {
-        if(!VSM_CanVirtualize() || !VSM_HasVirtualItems())
-            return super.CanPutIntoHands(parent);
-
+        if(super.CanPutInCargo(parent))
+        {
+            if ( !EnableTakeNonEmptyContainers() )
+            {
+                return VSM_CanVirtualize() && !VSM_HasVirtualItems();
+            }
+            
+            return true;
+        }
+        
         return false;
     }
 
@@ -83,13 +92,16 @@ modded class rag_baseitems_placeable_base : ItemBase
 	}
 
     override void Open()
-    {
+    {   
         if (VSM_CanOpen())
         {
             super.Open();
 
             if (GetGame().IsServer())
+            {
+                VSM_StartAutoClose();
                 VirtualStorageModule.GetModule().OnLoadVirtualStore(this);
+            }
         }
     }
 
@@ -98,7 +110,10 @@ modded class rag_baseitems_placeable_base : ItemBase
         if (VSM_CanClose())
         {
             if (GetGame().IsServer())
-            VirtualStorageModule.GetModule().OnSaveVirtualStore(this);
+            {
+                VSM_StopAutoClose();
+                VirtualStorageModule.GetModule().OnSaveVirtualStore(this);
+            }
             
             super.Close();
         }
@@ -182,36 +197,38 @@ modded class rag_baseitems_placeable_base : ItemBase
         VSM_SetHasItems(m_VSM_HasVirtualItems);
     }
 
-    override void VSM_OnBeforeRestoreChildren() //as item
+    //! compatibilidade---------------------------------------------------
+    override void VSM_OnBeforeRestoreChildren() 
     {
-        SetStateOpen();
-    }
+        super.VSM_OnBeforeRestoreChildren();
 
-    override void VSM_OnAfterRestoreChildren() // as item
-    {
-        RestoreStateOpen();
-    }
-
-    override void VSM_OnBeforeContainerRestore() // as storage
-    {
-        SetStateOpen();
-    }
-
-    override void VSM_OnAfterContainerRestore() // as storage
-    {
-        super.VSM_OnAfterContainerRestore(); //autoclose ?
-        RestoreStateOpen();
-    }
-
-    void SetStateOpen()
-    {
+        //! abrir para restauarar os filhos (senão bloqueia)
         m_LastOpen = m_IsOpened;
         m_IsOpened = true;
     }
 
-    void RestoreStateOpen() // as item
-    {
+    override void VSM_OnAfterRestoreChildren() 
+    {   
+        super.VSM_OnAfterRestoreChildren();
+
+        //! restaurar o estado anterior
         m_IsOpened = m_LastOpen;
     }
 
+    override void VSM_OnBeforeVirtualize()
+    {
+        super.VSM_OnBeforeVirtualize();
+        
+        if (!VSM_IsOpen() && VSM_HasVirtualItems()) 
+            VSM_Open();
+    }
+    //! ---------------------------------------------------
+
+    override bool VSM_IsVirtualizable()
+    {
+        if(super.VSM_IsVirtualizable())
+            return !GetInventory().IsAttachment();
+        
+        return false;
+    }
 }
